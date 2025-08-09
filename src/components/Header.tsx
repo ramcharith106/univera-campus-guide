@@ -1,18 +1,29 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Search, MessageCircle, User, Home, Building, MapPin } from "lucide-react";
+import { Menu, X, Search, MessageCircle, User, Home, Building, MapPin, LogOut, Settings } from "lucide-react";
 import logoIcon from "@/assets/logo-icon.png";
+import { useAuth } from '@/contexts/AuthContext';
+import LoginDialog from './LoginDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   const navigation = [
     { name: "Home", href: "/", icon: Home },
     { name: "Colleges", href: "/colleges", icon: Building },
     { name: "PGs", href: "/pgs", icon: MapPin },
-    { name: "Compare", href: "/compare", icon: Search },
+    ...(user?.role === 'admin' ? [{ name: "Admin", href: "/admin", icon: Settings }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -59,10 +70,33 @@ const Header = () => {
               <MessageCircle className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 bg-secondary h-3 w-3 rounded-full"></span>
             </Button>
-            <Button variant="outline" size="sm">
-              <User className="h-4 w-4 mr-2" />
-              Admin
-            </Button>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="h-4 w-4 mr-2" />
+                    {user.displayName}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background border">
+                  <DropdownMenuItem>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setShowLogin(true)}>
+                <User className="h-4 w-4 mr-2" />
+                Login
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -100,10 +134,23 @@ const Header = () => {
               })}
             </nav>
             <div className="mt-4 pt-4 border-t border-card-border flex flex-col space-y-2">
-              <Button variant="outline" className="justify-start">
-                <User className="h-4 w-4 mr-2" />
-                Admin Panel
-              </Button>
+              {user ? (
+                <>
+                  <Button variant="outline" className="justify-start">
+                    <User className="h-4 w-4 mr-2" />
+                    {user.displayName}
+                  </Button>
+                  <Button variant="ghost" className="justify-start" onClick={signOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" className="justify-start" onClick={() => setShowLogin(true)}>
+                  <User className="h-4 w-4 mr-2" />
+                  Login
+                </Button>
+              )}
               <Button variant="secondary" className="justify-start">
                 <MessageCircle className="h-4 w-4 mr-2" />
                 AI Assistant
@@ -112,6 +159,8 @@ const Header = () => {
           </div>
         )}
       </div>
+      
+      <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
     </header>
   );
 };
